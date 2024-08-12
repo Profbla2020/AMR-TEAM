@@ -1,0 +1,1011 @@
+---
+title: "Unlocking AMR Landscape : Decoding Regional and Global Trends using The ATLAS, And GEAR Databases, 2004-2021"
+author: "ARM TEAM"
+date: "2023-02-07"
+output: officedown::rdocx_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.cap.pre = "Figure ",
+	fig.cap.sep = ": ",
+	fig.cap.style = "Image Caption",
+	message = FALSE,
+	warning = FALSE,
+	tab.cap.pre = "Table ",
+	tab.cap.sep = ": ",
+	tab.cap.style = "Table Caption"
+)
+# LIBRARIES
+library(officedown)
+library(officer)
+library(tidyverse)
+library(timetk)
+library(readr) 
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(psych)
+library(viridis)
+library(here)
+library(flextable)
+library(likert)
+library(lattice)
+library(caret)
+library(ggthemes)
+library(stargazer)
+library(glmnet)
+library(ltm)
+library(reshape2)
+library(pheatmap)
+library(tidyr)
+library(gridExtra)
+library(patchwork)
+
+```
+
+## Executive Summary
+
+This document presents an analysis of global and regional antimicrobial resistance (AMR) trends for 13 WHO priority list pathogens using ATLAS data collected from 2004 to 2021.
+
+\newpage
+
+```{r}
+block_toc()
+```
+
+```{r}
+block_toc(style = "Image Caption")
+```
+
+\newpage
+
+## Tables
+
+This is a linked reference to a table \@ref(tab:ARMtab), its number is computed by Word and it's linked to the corresponding table when clicking on it.
+
+```{r tab.cap="ARMDATA table", tab.cap.style="Table Caption", tab.id="ARMtab"}
+ARMDATA <- read_csv("ARMDATA.csv")
+# View the first 10 rows and 10 columns
+view_data <- ARMDATA[1:5, 1:5]
+view_data
+
+summary(ARMDATA)
+
+colSums(is.na(ARMDATA))
+
+# Check unique values in categorical columns 
+unique(ARMDATA$Species)
+unique(ARMDATA$Region)
+unique(ARMDATA$Phenotype)
+unique(ARMDATA$Study)
+unique(ARMDATA$Family)
+unique(ARMDATA$Super_Regions)
+unique(ARMDATA$`GBD-Regions`)
+unique(ARMDATA$Country)
+unique(ARMDATA$Gender)
+unique(ARMDATA$Age_Group)
+unique(ARMDATA$Speciality)
+unique(ARMDATA$Source)
+unique(ARMDATA$`In_/_Out_Patient`)
+unique(ARMDATA$Year)
+
+# Calculate frequencies or percentages for all the  categorical variables in the data 
+table(ARMDATA$Gender)
+table(ARMDATA$`Super Regions`)
+table(ARMDATA$`GBD-Regions`)
+round(prop.table(table(ARMDATA$Levofloxacin_I)),2)
+round(prop.table(table(ARMDATA$Gender)),2)    
+round(prop.table(table(ARMDATA$`Super Regions`)),2)
+round(prop.table(table(ARMDATA$`Super Regions`)),2)
+
+```
+
+\newpage
+
+## Figures
+
+## Understanding the Demographical distribution of the data.
+
+```{r fig.cap="Demographical Distribution  plot", fig.id = "tsplot", fig.cap.style = "Image Caption"}
+#create Gender 
+viz_data =  ARMDATA %>% 
+  group_by(Gender) %>%
+  filter(Gender %in% c("Female","Male")) %>%
+  dplyr::select(Gender) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1))
+viz_data
+clr_1 <- c("firebrick4", "gray70")
+# bar plot
+ggplot(viz_data, aes(x = Gender, y = Frequency, fill = Gender)) + 
+  geom_bar(stat = "identity", width = 0.5, position = position_dodge()) +
+  geom_text(aes(label = Percent), vjust = -0.5, color = "black", 
+            position = position_dodge(width = 0.9), size = 3.5) +
+  scale_fill_manual(values = clr_1) +
+  labs(title = "Distribution of Gender", x = "Gender", y = "Frequency") +
+  theme_minimal()
+
+#create Age group distribution 
+viz_data_Age =  ARMDATA %>% 
+  group_by(Age_Group) %>%
+   dplyr::select(Age_Group) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Age_Group))
+viz_data_Age
+
+# Modify the Age_Group format
+viz_data_Age$Age_Group <- gsub(" to ", " - ", viz_data_Age$Age_Group)
+viz_data_Age$Age_Group <- gsub(" Years", "Yrs", viz_data_Age$Age_Group)
+viz_data_Age$Age_Group <- gsub(" and Over", " and Above", viz_data_Age$Age_Group)
+# Arrange the data in descending order
+viz_data_Age <- viz_data_Age[order(-viz_data_Age$Frequency),]
+viz_data_Age
+
+#create Region distribution 
+viz_data_Region =  ARMDATA %>% 
+  group_by(Region) %>%
+  dplyr::select(Region) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Region))
+# Arrange the data in descending order
+viz_data_Region <- viz_data_Region[order(-viz_data_Region$Frequency),]
+viz_data_Region
+
+#create Species distribution 
+viz_data_Species =  ARMDATA %>% 
+  group_by(Species) %>%
+  dplyr::select(Species) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Species))
+# Arrange the data in descending order
+viz_data_Species <- viz_data_Species[order(-viz_data_Species$Frequency),]
+viz_data_Species
+
+#create Family distribution 
+viz_data_Family =  ARMDATA %>% 
+  group_by(Family) %>%
+  dplyr::select(Family) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Family))
+# Arrange the data in descending order
+viz_data_Family <- viz_data_Family[order(-viz_data_Family$Frequency),]
+viz_data_Family
+
+
+#create Super_Regions distribution 
+viz_data_Super_Regions =  ARMDATA %>% 
+  group_by(Super_Regions) %>%
+  dplyr::select(Super_Regions) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Super_Regions))
+# Arrange the data in descending order
+viz_data_Super_Regions <- viz_data_Super_Regions[order(-viz_data_Super_Regions$Frequency),]
+viz_data_Super_Regions
+
+#create GBD-Regions distribution 
+viz_data_GBD_Regions =  ARMDATA %>% 
+  group_by(`GBD-Regions`) %>%
+  dplyr::select(`GBD-Regions`) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(`GBD-Regions`))
+# Arrange the data in descending order
+viz_data_GBD_Regions <- viz_data_GBD_Regions[order(-viz_data_GBD_Regions$Frequency),]
+viz_data_GBD_Regions
+
+
+#create Country distribution 
+viz_data_Country =  ARMDATA %>% 
+  group_by(Country) %>%
+  dplyr::select(Country) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Country))
+# Arrange the data in descending order
+viz_data_Country <- viz_data_Country[order(-viz_data_Country$Frequency),]
+viz_data_Country
+
+#create Speciality distribution 
+viz_data_Speciality =  ARMDATA %>% 
+  group_by(Speciality) %>%
+  dplyr::select(Speciality) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Speciality))
+# Arrange the data in descending order
+viz_data_Speciality <- viz_data_Speciality[order(-viz_data_Speciality$Frequency),]
+viz_data_Speciality
+
+#create In_/_Out_Patient distribution 
+viz_data_In__Out_Patient =  ARMDATA %>% 
+  mutate(`In_/_Out_Patient` = replace_na(`In_/_Out_Patient`, "Unknown")) %>%
+  group_by(`In_/_Out_Patient`) %>%
+  dplyr::select(`In_/_Out_Patient`) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(`In_/_Out_Patient`))
+# Arrange the data in descending order
+viz_data_In__Out_Patient <- viz_data_In__Out_Patient[order(-viz_data_In__Out_Patient$Frequency),]
+viz_data_In__Out_Patient
+
+
+#create Phenotype distribution 
+viz_data_In_Phenotype =  ARMDATA %>% 
+  mutate(Phenotype = replace_na(Phenotype, "Unknown")) %>%
+  group_by(Phenotype) %>%
+  dplyr::select(Phenotype) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Phenotype))
+
+# Arrange the data in descending order
+viz_data_In_Phenotype <- viz_data_In_Phenotype[order(-viz_data_In_Phenotype$Frequency),]
+viz_data_In_Phenotype
+
+#create Source distribution 
+viz_data_Source =  ARMDATA %>% 
+  group_by(Source_Categories) %>%
+  dplyr::select(Source_Categories) %>%
+  summarise(Frequency = n()) %>%
+  mutate(Percent = round(Frequency/sum(Frequency)*100, 1)) %>%
+  arrange(desc(Source_Categories))
+# Arrange the data in descending order
+viz_data_Source <- viz_data_Source[order(-viz_data_Source$Frequency),]
+viz_data_Source
+
+```
+
+\newpage
+
+## Calculate resistance rates for each pathogen and antibiotic all together.
+
+```{r fig.height=13, fig.width=2, tab.cap="resistance rates for each pathogen and antibiotic Table", tab.cap.style="Table Caption", tab.id="ARMtab"}
+resistance_rates_t <- ARMDATA %>%
+  group_by(Species) %>%
+  summarise(across(Amikacin_I:Meropenem_vaborbactam_I, 
+                   ~mean(. == "Resistant", na.rm = TRUE))) %>%
+  mutate(across(Amikacin_I:Meropenem_vaborbactam_I, 
+                ~ifelse(is.nan(.), 0, .))) %>%
+  filter(if_any(Amikacin_I:Meropenem_vaborbactam_I, ~. != 0))
+
+
+resistance_rates_t[1:13, 1:6]
+
+```
+
+\newpage
+
+## Melt the data frame for heatmap plotting
+
+```{r tab.cap="HeatMap Plot table", tab.cap.style="Table Caption", tab.id="ARMtab"}
+
+# Melt the data frame for heatmap plotting
+melted_data <- melt(resistance_rates_t, id.vars = "Species")
+head(melted_data)
+
+```
+
+\newpage
+
+##Heat MAp 🗺 Figures
+
+## Create heatmaps for each antibiotic against each Pathogen in our ARMDATA
+
+```{r fig.cap="heatmap for each antibiotic against each Pathogen  plot", fig.cap.style="Image Caption", fig.height=5, fig.id="tsplot", fig.width=12, message=FALSE, warning=FALSE}
+
+heatmap_for_RES_each = ggplot(melted_data, aes(x = variable, y = Species, fill = value)) +
+  geom_tile(color = "white", size = 0.5) + 
+  scale_fill_gradient(low = "gray", high = "firebrick4",name = "Resistant Intensity") +
+  labs(title = "Antibiotic Resistance Rates Across Species",
+       x = "Antibiotics", y = "Species") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major = element_line(color = "gray", size = 0.2),  
+        panel.grid.minor = element_blank()) 
+heatmap_for_RES_each
+
+```
+
+\newpage
+
+## resistance rates for each pathogen Table
+
+## Calculate resistance rates for each pathogen and antibiotic separately and Identify pathogen with highest resistance for each antibiotic.
+
+```{r message=FALSE, warning=FALSE, tab.cap=" resistance rates for each pathogen Table", tab.cap.style="Table Caption", tab.id="ARMtab"}
+
+
+resistance_rates_Amikacin_1 <- ARMDATA %>%
+  group_by(Species) %>%
+  summarise_at(vars(Amikacin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Amikacin_I)) %>%
+  mutate(Amikacin_I = replace(Amikacin_I, is.nan(Amikacin_I), 0)) %>%
+  filter(Amikacin_I != 0) 
+
+resistance_rates_Amikacin_1
+
+resistance_rates_Amoxycillin_clavulanate_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Amoxycillin_clavulanate_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Amoxycillin_clavulanate_I)) %>%
+  mutate(Amoxycillin_clavulanate_I = replace(Amoxycillin_clavulanate_I, is.nan(Amoxycillin_clavulanate_I), 0)) %>%
+  filter(Amoxycillin_clavulanate_I != 0) 
+
+resistance_rates_Amoxycillin_clavulanate_I
+
+resistance_rates_Ampicillin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ampicillin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ampicillin_I)) %>%
+  mutate(Ampicillin_I = replace(Ampicillin_I, is.nan(Ampicillin_I), 0)) %>%
+  filter(Ampicillin_I != 0) 
+
+resistance_rates_Ampicillin_I
+
+resistance_rates_Azithromycin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Azithromycin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Azithromycin_I)) %>%
+  mutate(Azithromycin_I = replace(Azithromycin_I, is.nan(Azithromycin_I), 0)) %>%
+  filter(Azithromycin_I != 0) 
+
+resistance_rates_Azithromycin_I
+
+resistance_rates_Cefepime_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Cefepime_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Cefepime_I)) %>%
+  mutate(Cefepime_I = replace(Cefepime_I, is.nan(Cefepime_I), 0)) %>%
+  filter(Cefepime_I != 0) 
+
+resistance_rates_Cefepime_I
+
+resistance_rates_Ceftazidime_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ceftazidime_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ceftazidime_I)) %>%
+  mutate(Ceftazidime_I = replace(Ceftazidime_I, is.nan(Ceftazidime_I), 0)) %>%
+  filter(Ceftazidime_I != 0) 
+
+resistance_rates_Ceftazidime_I
+
+resistance_rates_Ceftriaxone_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ceftriaxone_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ceftriaxone_I)) %>%
+  mutate(Ceftriaxone_I = replace(Ceftriaxone_I, is.nan(Ceftriaxone_I), 0)) %>%
+  filter(Ceftriaxone_I != 0) 
+
+resistance_rates_Ceftriaxone_I
+
+resistance_rates_Clarithromycin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Clarithromycin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Clarithromycin_I)) %>%
+  mutate(Clarithromycin_I = replace(Clarithromycin_I, is.nan(Clarithromycin_I), 0)) %>%
+  filter(Clarithromycin_I != 0) 
+
+resistance_rates_Clarithromycin_I
+
+resistance_rates_Clindamycin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Clindamycin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Clindamycin_I)) %>%
+  mutate(Clindamycin_I = replace(Clindamycin_I, is.nan(Clindamycin_I), 0)) %>%
+  filter(Clindamycin_I != 0) 
+
+resistance_rates_Clindamycin_I
+
+resistance_rates_Erythromycin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Erythromycin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Erythromycin_I)) %>%
+  mutate(Erythromycin_I = replace(Erythromycin_I, is.nan(Erythromycin_I), 0)) %>%
+  filter(Erythromycin_I != 0) 
+
+resistance_rates_Erythromycin_I
+
+
+resistance_rates_Imipenem_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Imipenem_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Imipenem_I)) %>%
+  mutate(Imipenem_I = replace(Imipenem_I, is.nan(Imipenem_I), 0)) %>%
+  filter(Imipenem_I != 0) 
+
+resistance_rates_Imipenem_I
+
+resistance_rates_Levofloxacin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Levofloxacin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Levofloxacin_I)) %>%
+  mutate(Levofloxacin_I = replace(Levofloxacin_I, is.nan(Levofloxacin_I), 0)) %>%
+  filter(Levofloxacin_I != 0) 
+
+resistance_rates_Levofloxacin_I
+
+resistance_rates_Linezolid_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Linezolid_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Linezolid_I)) %>%
+  mutate(Linezolid_I = replace(Linezolid_I, is.nan(Linezolid_I), 0)) %>%
+  filter(Linezolid_I != 0) 
+
+resistance_rates_Linezolid_I
+
+resistance_rates_Meropenem_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Meropenem_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Meropenem_I)) %>%
+  mutate(Meropenem_I = replace(Meropenem_I, is.nan(Meropenem_I), 0)) %>%
+  filter(Meropenem_I != 0) 
+
+resistance_rates_Meropenem_I
+
+resistance_rates_Minocycline_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Minocycline_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Minocycline_I)) %>%
+  mutate(Minocycline_I = replace(Minocycline_I, is.nan(Minocycline_I), 0)) %>%
+  filter(Minocycline_I != 0) 
+
+resistance_rates_Minocycline_I
+
+resistance_rates_Penicillin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Penicillin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Penicillin_I)) %>%
+  mutate(Penicillin_I = replace(Penicillin_I, is.nan(Penicillin_I), 0)) %>%
+  filter(Penicillin_I != 0) 
+
+resistance_rates_Penicillin_I
+
+resistance_rates_Piperacillin_tazobactam_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Piperacillin_tazobactam_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Piperacillin_tazobactam_I)) %>%
+  mutate(Piperacillin_tazobactam_I = replace(Piperacillin_tazobactam_I, is.nan(Piperacillin_tazobactam_I), 0)) %>%
+  filter(Piperacillin_tazobactam_I != 0) 
+
+resistance_rates_Piperacillin_tazobactam_I
+
+resistance_rates_Tigecycline_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Tigecycline_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Tigecycline_I)) %>%
+  mutate(Tigecycline_I = replace(Tigecycline_I, is.nan(Tigecycline_I), 0)) %>%
+  filter(Tigecycline_I != 0) 
+
+resistance_rates_Tigecycline_I
+
+resistance_rates_Vancomycin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Vancomycin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Vancomycin_I)) %>%
+  mutate(Vancomycin_I = replace(Vancomycin_I, is.nan(Vancomycin_I), 0)) %>%
+  filter(Vancomycin_I != 0) 
+
+resistance_rates_Vancomycin_I
+
+resistance_rates_Ampicillin_sulbactam_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ampicillin_sulbactam_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ampicillin_sulbactam_I)) %>%
+  mutate(Ampicillin_sulbactam_I = replace(Ampicillin_sulbactam_I, is.nan(Ampicillin_sulbactam_I), 0)) %>%
+  filter(Ampicillin_sulbactam_I != 0) 
+
+resistance_rates_Ampicillin_sulbactam_I
+
+resistance_rates_Aztreonam_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Aztreonam_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Aztreonam_I)) %>%
+  mutate(Aztreonam_I = replace(Aztreonam_I, is.nan(Aztreonam_I), 0)) %>%
+  filter(Aztreonam_I != 0) 
+
+resistance_rates_Aztreonam_I
+
+resistance_rates_Ceftaroline_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ceftaroline_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ceftaroline_I)) %>%
+  mutate(Ceftaroline_I = replace(Ceftaroline_I, is.nan(Ceftaroline_I), 0)) %>%
+  filter(Ceftaroline_I != 0) 
+
+resistance_rates_Ceftaroline_I
+
+
+resistance_rates_Ceftazidime_avibactam_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ceftazidime_avibactam_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ceftazidime_avibactam_I)) %>%
+  mutate(Ceftazidime_avibactam_I = replace(Ceftazidime_avibactam_I, is.nan(Ceftazidime_avibactam_I), 0)) %>%
+  filter(Ceftazidime_avibactam_I != 0) 
+
+resistance_rates_Ceftazidime_avibactam_I
+
+
+resistance_rates_Ceftazidime_avibactam_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ceftazidime_avibactam_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ceftazidime_avibactam_I)) %>%
+  mutate(Ceftazidime_avibactam_I = replace(Ceftazidime_avibactam_I, is.nan(Ceftazidime_avibactam_I), 0)) %>%
+  filter(Ceftazidime_avibactam_I != 0) 
+
+resistance_rates_Ceftazidime_avibactam_I
+
+resistance_rates_Colistin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Colistin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Colistin_I)) %>%
+  mutate(Colistin_I = replace(Colistin_I, is.nan(Colistin_I), 0)) %>%
+  filter(Colistin_I != 0) 
+
+resistance_rates_Colistin_I
+
+
+resistance_rates_Daptomycin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Daptomycin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Daptomycin_I)) %>%
+  mutate(Daptomycin_I = replace(Daptomycin_I, is.nan(Daptomycin_I), 0)) %>%
+  filter(Daptomycin_I != 0) 
+
+resistance_rates_Daptomycin_I
+
+resistance_rates_Doripenem_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Doripenem_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Doripenem_I)) %>%
+  mutate(Doripenem_I = replace(Doripenem_I, is.nan(Doripenem_I), 0)) %>%
+  filter(Doripenem_I != 0) 
+
+resistance_rates_Doripenem_I
+
+resistance_rates_Ertapenem_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ertapenem_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ertapenem_I)) %>%
+  mutate(Ertapenem_I = replace(Ertapenem_I, is.nan(Ertapenem_I), 0)) %>%
+  filter(Ertapenem_I != 0) 
+
+resistance_rates_Ertapenem_I
+
+resistance_rates_Gentamicin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Gentamicin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Gentamicin_I)) %>%
+  mutate(Gentamicin_I = replace(Gentamicin_I, is.nan(Gentamicin_I), 0)) %>%
+  filter(Gentamicin_I != 0) 
+
+resistance_rates_Gentamicin_I
+
+
+resistance_rates_Moxifloxacin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Moxifloxacin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Moxifloxacin_I)) %>%
+  mutate(Moxifloxacin_I = replace(Moxifloxacin_I, is.nan(Moxifloxacin_I), 0)) %>%
+  filter(Moxifloxacin_I != 0) 
+
+resistance_rates_Moxifloxacin_I
+
+resistance_rates_Oxacillin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Oxacillin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Oxacillin_I)) %>%
+  mutate(Oxacillin_I = replace(Oxacillin_I, is.nan(Oxacillin_I), 0)) %>%
+  filter(Oxacillin_I != 0) 
+
+resistance_rates_Oxacillin_I
+
+
+resistance_rates_Quinupristin_dalfopristin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Quinupristin_dalfopristin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Quinupristin_dalfopristin_I)) %>%
+  mutate(Quinupristin_dalfopristin_I = replace(Quinupristin_dalfopristin_I, is.nan(Quinupristin_dalfopristin_I), 0)) %>%
+  filter(Quinupristin_dalfopristin_I != 0) 
+
+resistance_rates_Quinupristin_dalfopristin_I
+
+
+resistance_rates_Teicoplanin_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Teicoplanin_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Teicoplanin_I)) %>%
+  mutate(Teicoplanin_I = replace(Teicoplanin_I, is.nan(Teicoplanin_I), 0)) %>%
+  filter(Teicoplanin_I != 0) 
+
+resistance_rates_Teicoplanin_I
+
+
+resistance_rates_Trimethoprim_sulfa_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Trimethoprim_sulfa_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Trimethoprim_sulfa_I)) %>%
+  mutate(Trimethoprim_sulfa_I = replace(Trimethoprim_sulfa_I, is.nan(Trimethoprim_sulfa_I), 0)) %>%
+  filter(Trimethoprim_sulfa_I != 0) 
+
+resistance_rates_Trimethoprim_sulfa_I
+
+
+resistance_rates_Ceftolozane_tazobactam_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Ceftolozane_tazobactam_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Ceftolozane_tazobactam_I)) %>%
+  mutate(Ceftolozane_tazobactam_I = replace(Ceftolozane_tazobactam_I, is.nan(Ceftolozane_tazobactam_I), 0)) %>%
+  filter(Ceftolozane_tazobactam_I != 0) 
+
+resistance_rates_Ceftolozane_tazobactam_I
+
+
+resistance_rates_Cefoperazone_sulbactam_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Cefoperazone_sulbactam_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Cefoperazone_sulbactam_I)) %>%
+  mutate(Cefoperazone_sulbactam_I = replace(Cefoperazone_sulbactam_I, is.nan(Cefoperazone_sulbactam_I), 0)) %>%
+  filter(Cefoperazone_sulbactam_I != 0) 
+
+resistance_rates_Cefoperazone_sulbactam_I
+
+
+resistance_rates_Meropenem_vaborbactam_I <- ARMDATA %>%
+  
+  group_by(Species) %>%
+  summarise_at(vars(Meropenem_vaborbactam_I), 
+               function(x) mean(x == "Resistant", na.rm = TRUE)) %>%
+  arrange(desc(Meropenem_vaborbactam_I)) %>%
+  mutate(Meropenem_vaborbactam_I = replace(Meropenem_vaborbactam_I, is.nan(Meropenem_vaborbactam_I), 0)) %>%
+  filter(Meropenem_vaborbactam_I != 0) 
+
+resistance_rates_Meropenem_vaborbactam_I
+
+```
+
+\newpage
+
+## Bar Plot for resistance rates of each pathogen
+
+# Creating the bar plot for each of the pathogens that has the highest resistance rate.
+
+```{r fig.height=4, fig.width=6, message=FALSE, warning=FALSE, fig.cap=" resistance rates Plot", fig.cap.style="Image Caption", tab.id="ARMtab"}
+
+
+
+# Select columns with antibiotic resistance information
+antibiotic_columns <- names(resistance_rates_t)[-1] 
+# Reshape data for plotting
+resistance_rates_long <- pivot_longer(resistance_rates_t, cols = -Species, names_to = "Antibiotic", values_to = "ResistanceRate")
+
+# Filter out non-resistant data (where resistance rate is not 0)
+resistance_rates_filtered <- resistance_rates_long %>%
+  filter(ResistanceRate != 0)
+
+# Plot resistance rates for each antibiotic
+plots_list <- list()
+
+for (antibiotic in antibiotic_columns) {
+  plot <- ggplot(resistance_rates_filtered %>% filter(Antibiotic == antibiotic), aes(x = Species, y = ResistanceRate)) +
+    geom_bar(stat = "identity", position = "dodge", fill = "gray",color = "firebrick4") +
+    geom_text(aes(label = sprintf("%.2f", ResistanceRate)), 
+              position = position_dodge(width = 0.9), 
+              vjust = -0.4, size = 2.3) +
+    labs(x = " ", y = "Resistance Rate", title = paste("Resistance to", antibiotic,"by Species")) +
+    theme_minimal()+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+  
+  plots_list[[antibiotic]] <- plot
+}
+
+# Display individual plots for each antibiotic
+plots_list
+
+```
+
+\newpage
+
+## Bar Plot for resistance rates of each pathogen
+
+# Creating the bar plot for each of the pathogens that has the highest resistance rate.
+
+# Having the plot for each of the individual Antibiotics may be too clumsy, so splitting the plot into 6 groups of Panel will make a bit sense
+
+```{r fig.cap=" resistance rates Plot", fig.cap.style="Image Caption", fig.height=6.5, fig.width=13, message=FALSE, warning=FALSE, tab.id="ARMtab"}
+
+antibiotic_columns <- names(resistance_rates_t)[-1] 
+resistance_rates_long <- pivot_longer(resistance_rates_t, cols = -Species, names_to = "Antibiotic", values_to = "ResistanceRate")
+resistance_rates_filtered <- resistance_rates_long %>%
+  filter(ResistanceRate != 0)
+
+# Split the plots into three groups
+plots_grouped <- split(antibiotic_columns, ceiling(seq_along(antibiotic_columns)/ceiling(length(antibiotic_columns)/8)))
+
+# Create plots for each group
+grid_list <- lapply(plots_grouped, function(antibiotics_subset) {
+  plots_list <- lapply(antibiotics_subset, function(antibiotic) {
+    plot <- ggplot(resistance_rates_filtered %>% filter(Antibiotic == antibiotic), aes(x = Species, y = ResistanceRate)) +
+      geom_bar(stat = "identity", position = "dodge", fill = "gray", color  = "firebrick4") +
+      geom_text(aes(label = sprintf("%.2f", ResistanceRate)), 
+                position = position_dodge(width = 0.9), 
+                vjust = -0.4, size = 2.0, color = "black") +
+      labs(x = " ", y = " ", title = paste("Resistance to", antibiotic)) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    return(plot)
+  })
+  
+  return(grid.arrange(grobs = plots_list, ncol = 3))  # Arrange plots in a grid for each group
+})
+
+```
+
+\newpage
+
+# Calculate resistance rates for each pathogen and antibiotic separately and Identify pathogen Trends across the super region over the year.
+
+```{r tab.cap= "resistance rates for each pathogen Across Super Regoins for Trend Analysis", tab.cap.style= "Table Caption", tab.id="restab"}
+
+resistance_rates_super_reg <- ARMDATA %>%
+  group_by(Super_Regions,Year) %>%
+  summarise(across(Amikacin_I:Meropenem_vaborbactam_I, 
+                   ~mean(. == "Resistant", na.rm = TRUE))) %>%
+  mutate(across(Amikacin_I:Meropenem_vaborbactam_I, 
+                ~ifelse(is.nan(.), 0, .))) %>%
+  filter(if_any(Amikacin_I:Meropenem_vaborbactam_I, ~. != 0))
+
+VC = resistance_rates_super_reg[1:10,1:5]
+VC
+
+```
+
+# Now i can display individual plots for each antibiotic's resistance rates over time across the the super region 
+
+```{r fig.cap=" resistance rates over time Across the Super Region ", fig.cap.style="Image Caption", fig.height=5, fig.width=15, message=FALSE, warning=FALSE, tab.id="ARMtab"}
+
+plot_all_antibiotics_nonzero_supper <- function(data) {
+  antibiotics <- names(data)[grepl("_I$", names(data))] 
+  
+  for (antibiotic in antibiotics) {
+    antibiotic_data_1 <- data[, c("Super_Regions", "Year", antibiotic)]
+    antibiotic_data_1$Year <- as.factor(antibiotic_data_1$Year)
+    
+    # Filter data where resistance rate is not zero
+    antibiotic_data_1 <- antibiotic_data_1[antibiotic_data_1[[antibiotic]] != 0, ]
+    
+    if (nrow(antibiotic_data_1) > 0) {
+      R <- ggplot(antibiotic_data_1, aes(x = Year, y = !!sym(antibiotic), group = Super_Regions, color = Super_Regions)) +
+        geom_line() +
+        geom_point() +
+        labs(title = paste(antibiotic, "Resistance Rates Over Time by Super_Regions"),
+             x = "Year",
+             y = "Resistance Rate") +
+        theme_tufte() +
+        facet_wrap(~Super_Regions, scales = "free_y") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      
+      print(R)
+    } else {
+      message("No non-zero resistance rates found for", antibiotic)
+    }
+  }
+}
+
+
+plot_all_antibiotics_nonzero_supper(resistance_rates_super_reg)
+
+```
+
+\newpage
+
+# Calculate resistance rates for each pathogen and antibiotic separately and Identify pathogen Trends over the year.
+
+```{r tab.cap= "resistance rates for each pathogen table for Trend Analysis", tab.cap.style= "Table Caption", tab.id="restab"}
+
+resistance_rates_t_year <- ARMDATA %>%
+  group_by(Species,Year) %>%
+  summarise(across(Amikacin_I:Meropenem_vaborbactam_I, 
+                   ~mean(. == "Resistant", na.rm = TRUE))) %>%
+  mutate(across(Amikacin_I:Meropenem_vaborbactam_I, 
+                ~ifelse(is.nan(.), 0, .))) %>%
+  filter(if_any(Amikacin_I:Meropenem_vaborbactam_I, ~. != 0))
+
+
+VR = resistance_rates_t_year[1:10,1:5]
+VR
+
+```
+
+# Now i can display individual plots for each antibiotic's resistance rates over time
+
+```{r fig.cap=" resistance rates over time ", fig.cap.style="Image Caption", fig.height=5, fig.width=12, message=FALSE, warning=FALSE, tab.id="ARMtab"}
+
+plot_all_antibiotics_nonzero <- function(data) {
+  antibiotics <- names(data)[grepl("_I$", names(data))] 
+  
+  for (antibiotic in antibiotics) {
+    antibiotic_data <- data[, c("Species", "Year", antibiotic)]
+    antibiotic_data$Year <- as.factor(antibiotic_data$Year)
+    
+    # Filter data where resistance rate is not zero
+    antibiotic_data <- antibiotic_data[antibiotic_data[[antibiotic]] != 0, ]
+    
+    if (nrow(antibiotic_data) > 0) {
+      p <- ggplot(antibiotic_data, aes(x = Year, y = !!sym(antibiotic), group = Species, color = Species)) +
+        geom_line() +
+        geom_point() +
+        labs(title = paste(antibiotic, "Resistance Rates Over Time by Species"),
+             x = "Year",
+             y = "Resistance Rate") +
+        theme_minimal() +
+        facet_wrap(~Species, scales = "free_y") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      
+      print(p)
+    } else {
+      message("No non-zero resistance rates found for", antibiotic)
+    }
+  }
+}
+
+
+plot_all_antibiotics_nonzero(resistance_rates_t_year)
+
+```
+
+\newpage
+
+## Predictions
+
+# To predict the trend for the next 5 years for each antibiotic,i use time-series forecasting methods. i fit a simple linear regression model for each antibiotic and then use that model to make predictions for the next 5 years
+
+```{r fig.height=4, fig.width=10, message=FALSE, warning=FALSE, tab.cap="resistance rates for each pathogen table for Trend Analysis", tab.cap.style="Table Caption", tab.id="ARMtab"}
+
+
+
+# Get a list of unique species
+unique_species <- unique(resistance_rates_t_year$Species)
+
+# List to store predicted data
+predicted_results <- list()
+
+# Loop through each species
+for (species in unique_species) {
+  # Subset data for the current species
+  species_data <- subset(resistance_rates_t_year, Species == species)
+  
+  # Get columns of antibiotics with '_I' suffix (assuming these are resistance columns)
+  antibiotics <- names(species_data)[grepl("_I$", names(species_data))]
+  
+  # Loop through each antibiotic for the current species
+  for (antibiotic in antibiotics) {
+    # Select data for the specific antibiotic
+    antibiotic_data <- subset(species_data, select = c('Species', 'Year', antibiotic))
+    
+    # Fit a linear regression model for the selected antibiotic
+    model <- lm(as.formula(paste(antibiotic, "~ Year")), data = antibiotic_data)
+    
+    # Create a data frame for the next 5 years
+    future_years <- data.frame(Year = seq(max(antibiotic_data$Year) + 1, max(antibiotic_data$Year) + 5))
+    
+    # Predict resistance rates for the next 5 years
+    predictions <- predict(model, newdata = future_years)
+    
+    # Filter out predictions that are 0
+    non_zero_predictions <- predictions[predictions != 0]
+    
+    # Check if there are non-zero predictions before storing
+    if (length(non_zero_predictions) > 0) {
+      # Store the predicted data for the current species and antibiotic
+      result_table <- cbind(species, antibiotic, future_years, Predicted_Resistance = non_zero_predictions)
+      predicted_results[[paste(species, antibiotic, sep = "_")]] <- result_table
+      
+      
+      # Create a data frame for actual and predicted values
+      plot_data <- rbind(data.frame(Year = antibiotic_data$Year, Resistance_Rate = antibiotic_data[[antibiotic]], Type = "Actual"),
+                         data.frame(Year = future_years$Year, Resistance_Rate = non_zero_predictions, Type = "Predicted"))
+      
+      # Convert Type column to factor for better plotting
+      plot_data$Type <- as.factor(plot_data$Type)
+      
+      # Plot using ggplot2
+      Plot = ggplot(plot_data, aes(x = Year, y = Resistance_Rate, color = Type, group = Type)) +
+        geom_line() +
+        geom_point() +
+        labs(title = paste("Resistance Prediction for", species, "-", antibiotic),
+             x = 'Year', y = 'Resistance Rate') +
+        theme_minimal() +
+        scale_color_manual(values = c("Actual" = "firebrick4", "Predicted" = "green1"))
+      
+      # Save the plot as an image file if needed
+      # You can customize the filename as needed
+      # ggsave(filename = paste("Resistance_Prediction_", species, "_", antibiotic, ".png"), plot = last_plot(), width = 8, height = 6, units = 'in', dpi = 300)
+      # Print the plot to the console
+      print(Plot)
+      # Display the result table
+      cat("\n", paste("Result for", species, antibiotic), "\n")
+      print(result_table)
+    
+    
+    }
+  }
+}
+
+```
